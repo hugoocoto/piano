@@ -1,3 +1,4 @@
+#include <signal.h>
 #define MINIAUDIO_IMPLEMENTATION
 #include "miniaudio.h"
 
@@ -32,19 +33,33 @@ toggle_raw_mode()
 }
 
 void
-print_piano()
+print_piano(char press)
 {
-#define KB_ACTION(_key_, _sound_) printf("%c ", _key_);
+        printf("\033[H\033[2J");
+#define KEY(_key_, _sound_)                                              \
+        printf("%s   ", press == _key_ ? "\033[41;30m" : "\033[47;30m"); \
+        printf("%s   ", "\033[3D\033[B");                                \
+        printf("%s   ", "\033[3D\033[B");                                \
+        printf("%s %c ", "\033[3D\033[B", _key_);                        \
+        printf("%s   ", "\033[3D\033[B");                                \
+        printf("\033[0m\033[4A\033[C");
 #include "config.h"
-#undef KB_ACTION
-        putchar(10);
+#undef KEY
+        fflush(stdout);
 }
 
-#define KB_ACTION(_key_, _sound_)                                 \
+#define KEY(_key_, _sound_)                                       \
         case _key_:                                               \
                 ma_engine_play_sound(&engine, DIR _sound_, NULL); \
-                printf("Play sound: %s\n", _sound_);              \
+                print_piano(_key_);                               \
+                alarm(1);                                         \
                 break;
+
+void
+reset(int)
+{
+        print_piano(0);
+}
 
 int
 main()
@@ -52,6 +67,8 @@ main()
         ma_result result;
         ma_engine engine;
         char k;
+
+        signal(SIGALRM, reset);
 
         result = ma_engine_init(NULL, &engine);
         if (result != MA_SUCCESS) {
@@ -61,7 +78,7 @@ main()
 
         toggle_raw_mode();
 
-        print_piano();
+        print_piano(0);
 
         for (;;) {
                 if (read(STDIN_FILENO, &k, 1) <= 0) break;
@@ -69,9 +86,6 @@ main()
 /*           */ #include "config.h"
                 case '':
                         goto exit;
-                default:
-                        printf("Char %c\n", k);
-                        break;
                 }
         }
 exit:
