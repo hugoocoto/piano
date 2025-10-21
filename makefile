@@ -1,2 +1,2 @@
-piano: main.c
-	gcc main.c -o piano
+piano: main.c config.h
+	gcc main.c -o piano -lm
