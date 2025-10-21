@@ -32,17 +32,56 @@ toggle_raw_mode()
         enabled = true;
 }
 
+int
+piano_length()
+{
+/*   */ #define KEY(...) +1
+        return
+/*   */ #include "config.h"
+        ;
+/*   */ #undef KEY
+}
+
 void
 print_piano(char press)
 {
+        int len = piano_length();
+        int i = 0;
+
         printf("\033[H\033[2J");
-#define KEY(_key_, _sound_)                                              \
-        printf("%s   ", press == _key_ ? "\033[41;30m" : "\033[47;30m"); \
-        printf("%s   ", "\033[3D\033[B");                                \
-        printf("%s   ", "\033[3D\033[B");                                \
-        printf("%s %c ", "\033[3D\033[B", _key_);                        \
-        printf("%s   ", "\033[3D\033[B");                                \
-        printf("\033[0m\033[4A\033[C");
+        printf("\033[?25l");
+
+#define KEY(_key_, _sound_)                                                         \
+        do {                                                                        \
+                char *ncol = press == _key_ ? "\033[41;30m" : "\033[47;30m";        \
+                char *xcol = "\033[40;30m";                                         \
+                char *none = "\033[0m";                                             \
+                if (i == 0) {                                                       \
+                        i++;                                                        \
+                        printf("%s   %s  ", ncol, xcol);                            \
+                        printf("%s%s   %s  ", "\033[5D\033[B", ncol, xcol);         \
+                        printf("%s%s   %s  ", "\033[5D\033[B", ncol, xcol);         \
+                        printf("%s%s %c  %s ", "\033[5D\033[B", ncol, _key_, none); \
+                        printf("%s%s    %s ", "\033[5D\033[B", ncol, none);         \
+                        printf("\033[0m\033[4A");                                   \
+                } else if (i == len - 1) {                                          \
+                        i++;                                                        \
+                        printf("%s %s   ", xcol, ncol);                             \
+                        printf("%s%s %s   ", "\033[4D\033[B", xcol, ncol);          \
+                        printf("%s%s %s   ", "\033[4D\033[B", xcol, ncol);          \
+                        printf("%s %c  ", "\033[4D\033[B", _key_);                  \
+                        printf("%s    ", "\033[4D\033[B");                          \
+                        printf("\033[0m\033[4A");                                   \
+                } else {                                                            \
+                        i++;                                                        \
+                        printf("%s %s  %s  ", xcol, ncol, xcol);                    \
+                        printf("%s%s %s  %s  ", "\033[5D\033[B", xcol, ncol, xcol); \
+                        printf("%s%s %s  %s  ", "\033[5D\033[B", xcol, ncol, xcol); \
+                        printf("%s%s %c  %s ", "\033[5D\033[B", ncol, _key_, none); \
+                        printf("%s%s    %s ", "\033[5D\033[B", ncol, none);         \
+                        printf("\033[0m\033[4A");                                   \
+                }                                                                   \
+        } while (0);
 #include "config.h"
 #undef KEY
         fflush(stdout);
@@ -69,6 +108,7 @@ main()
         char k;
 
         signal(SIGALRM, reset);
+        signal(SIGINT, SIG_IGN);
 
         result = ma_engine_init(NULL, &engine);
         if (result != MA_SUCCESS) {
@@ -89,10 +129,9 @@ main()
                 }
         }
 exit:
-
-
         toggle_raw_mode();
         ma_engine_uninit(&engine);
+        printf("\033[?25h");
 
         return 0;
 }
