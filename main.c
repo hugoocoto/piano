@@ -1,12 +1,11 @@
 #include <signal.h>
-#define MINIAUDIO_IMPLEMENTATION
-#include "miniaudio.h"
-
 #include <stdbool.h>
 #include <stdio.h>
 #include <termios.h>
 #include <unistd.h>
 
+#define MINIAUDIO_IMPLEMENTATION
+#include "miniaudio.h"
 
 void
 toggle_raw_mode()
